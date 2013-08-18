@@ -1,8 +1,8 @@
 ;; Copyright © 2013 WANG Yanjin
 ;;
 ;; Author:   WANG Yanjin <wyj1046#gmail.com>
-;; URL:      no yet
-;; Version:  0.0.1
+;; URL:      http://github.com/goal/tagshow
+;; Version:  0.1.0
 ;; Keywords: tags
 
 ;; This file is NOT part of GNU Emacs.
@@ -18,16 +18,36 @@
   ""
   )
 
+(defvar *ctags-bin-candidates* '("ctags-exuberant" ; Debian
+                                 "exuberant-ctags"
+                                 "exctags"  ; FreeBSD, NetBSD
+                                 "/usr/local/bin/ctags"  ; Homebrew
+                                 "/opt/local/bin/ctags"  ; Macports
+                                 "ectags"  ; OpenBSD
+                                 "ctags"
+                                 "ctags.exe"
+                                 "tags"
+                                 ))
+
 (defvar *filename-cache* "")
 
 (defvar *tags-cache* "")
 
-(defun run-tags-command (path)
+(defun exists-ctags-program (pstr)
+  (ignore-errors
+    (let ((ret (run-command pstr "--version")))
+      (and (= 0 (nth 1 ret))
+           (string-match "Exuberant Ctags" (car ret))))))
+
+(defun get-available-ctags-bin ()
+  (car (remove-if-not (lambda (x) (exists-ctags-program x)) *ctags-bin-candidates*)))
+
+(defun run-command (program &rest args)
   "run program"
   (let ((stdout-buffer (generate-new-buffer (generate-new-buffer-name " *tagshow stdout*")))
 		output
 		exit-code)
-	(setq exit-code (call-process "exctags" nil stdout-buffer nil "-f -" "--format=2" "--excmd=pattern" "--fields=nksSa" "--extra=" "--sort=yes" path))
+	(setq exit-code (apply 'call-process program nil stdout-buffer nil args))
     (with-current-buffer stdout-buffer
       (setq output (buffer-string))
       (kill-buffer))
@@ -55,7 +75,7 @@
 
 (defun get-target-file-tags (path)
   ""
-  (let* ((ret (run-tags-command path))
+  (let* ((ret (run-command (get-available-ctags-bin) "-f -" "--format=2" "--excmd=pattern" "--fields=nksSa" "--extra=" "--sort=yes" path))
 		(tags-raw-content (car ret))
 		(exit-code (last ret))
 		(lines (split-string tags-raw-content "\n"))
@@ -70,7 +90,7 @@
   (car (last (car (remove-if-not (lambda (x) (equal (car x) select-tag)) *tags-cache*)))))
 
 (defun format-tags-cache ()
-  ""
+  "for debug use"
   (reduce (lambda (x y) (format "%s %s %d" x (car y) (car (last y)))) *tags-cache* :initial-value ""))
 
 (defun show-tags ()
@@ -81,8 +101,8 @@
 					 (lambda ()
 					   (tagshow-mode 1))
 					 (grizzl-completing-read "Show text: TODO" tagshow-index))))
-;;;	(goto-line (get-current-line-no select-tag))
-	(message (format "%s %d %s" select-tag 0 (format-tags-cache)))
+	(goto-line (get-current-line-no select-tag))
+;;;	(message (format "%s %d %s" select-tag (get-current-line-no select-tag) (format-tags-cache)))
 	))
 
 
