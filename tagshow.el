@@ -40,7 +40,7 @@
            (string-match "Exuberant Ctags" (car ret))))))
 
 (defun get-available-ctags-bin ()
-  (car (remove-if-not (lambda (x) (exists-ctags-program x)) *ctags-bin-candidates*)))
+  (or (car (remove-if-not (lambda (x) (exists-ctags-program x)) *ctags-bin-candidates*)) (throw 'no-exuberant-ctags-found t)))
 
 (defun run-command (program &rest args)
   "run program"
