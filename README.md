@@ -6,7 +6,7 @@ Requirements
 
 - [grizzl][1]
 
-- cl
+- [dash][2]
 
 
 Configure
@@ -21,3 +21,4 @@ Add such lines to your ~/.emacs:
     ```
 
 [1]: http://github.com/d11wtq/grizzl
+[2]: https://github.com/magnars/dash.el
