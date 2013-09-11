@@ -12,7 +12,7 @@
 ;; Licensed under the same terms as Emacs.
 
 (require 'grizzl)
-(require 'cl)
+(require 'dash)
 
 (define-minor-mode tagshow-mode
   ""
@@ -40,7 +40,7 @@
            (string-match "Exuberant Ctags" (car ret))))))
 
 (defun get-available-ctags-bin ()
-  (or (car (remove-if-not (lambda (x) (exists-ctags-program x)) *ctags-bin-candidates*)) (throw 'no-exuberant-ctags-found t)))
+  (or (car (-select (lambda (x) (exists-ctags-program x)) *ctags-bin-candidates*)) (throw 'no-exuberant-ctags-found t)))
 
 (defun run-command (program &rest args)
   "run program"
@@ -56,7 +56,7 @@
 (defun get-file-tags (path)
   ""
   (if (eq *filename-cache* path)
-	  (cl-map 'list 'car *tags-cache*)
+	  (-map 'car *tags-cache*)
 	  (get-target-file-tags path))
   )
 
@@ -79,19 +79,19 @@
 		(tags-raw-content (car ret))
 		(exit-code (last ret))
 		(lines (split-string tags-raw-content "\n"))
-		(-tags (cl-map 'list 'get-single-tag-and-line lines))
-		(filtered-tags (remove-if (lambda (x) (= 0 (length (car x)))) -tags)))
+		(-tags (-map 'get-single-tag-and-line lines))
+		(filtered-tags (-remove (lambda (x) (= 0 (length (car x)))) -tags)))
 	(setq *filename-cache* path)
 	(setq *tags-cache* filtered-tags)
-	(cl-map 'list 'car filtered-tags)))
+	(-map 'car filtered-tags)))
 
 (defun get-current-line-no (select-tag)
   ""
-  (car (last (car (remove-if-not (lambda (x) (equal (car x) select-tag)) *tags-cache*)))))
+  (-last-item (car (-select (lambda (x) (equal (car x) select-tag)) *tags-cache*))))
 
 (defun format-tags-cache ()
   "for debug use"
-  (reduce (lambda (x y) (format "%s %s %d" x (car y) (car (last y)))) *tags-cache* :initial-value ""))
+  (-reduce-from (lambda (x y) (format "%s %s %d" x (car y) (car (last y)))) "" *tags-cache*))
 
 (defun show-tags ()
   ""
