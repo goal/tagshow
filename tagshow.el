@@ -16,7 +16,10 @@
 
 (define-minor-mode tagshow-mode
   ""
-  )
+  (add-hook
+    'after-save-hook
+	(lambda ()
+	  (setq *filename-cache* ""))))
 
 (defvar *ctags-bin-candidates* '("ctags-exuberant" ; Debian
                                  "exuberant-ctags"
@@ -29,6 +32,8 @@
                                  "tags"
                                  ))
 
+;; full path, for instance: "/home/wyj/S/pu/ep/tagshow/tagshow.el"
+;; on windows, it's like "C:/S/tagshow/tagshow.el"
 (defvar *filename-cache* "")
 
 (defvar *tags-cache* "")
@@ -107,3 +112,5 @@
 
 
 (provide 'tagshow)
+
+;;; tagshow.el ends here
