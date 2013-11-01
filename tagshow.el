@@ -14,6 +14,10 @@
 (require 'grizzl)
 (require 'dash)
 
+(defgroup tagshow nil
+  "Same frame speedbar."
+  )
+
 (define-minor-mode tagshow-mode
   ""
   (add-hook
@@ -37,6 +41,15 @@
 (defvar *filename-cache* "")
 
 (defvar *tags-cache* "")
+
+(defcustom tagshow-right-side t
+  "Show the speedbar to the right side of the current window.
+If nil, the speedbar will appear on the left.
+Default is t."
+  :type 'boolean
+  :set (lambda (symbol value)
+         (set symbol value))
+  :group 'tagshow)
 
 (defun exists-ctags-program (pstr)
   (ignore-errors
@@ -110,6 +123,34 @@
 ;;;	(message (format "%s %d %s" select-tag (get-current-line-no select-tag) (format-tags-cache)))
 	))
 
+(defun show-tags-window ()
+  ""
+  )
+
+(defun tagshow-current-window-take-width (&optional window)
+  "Return the width that WINDOW take up.
+If WINDOW is nil, get current window."
+  (let ((edges (window-edges window)))
+    (- (nth 2 edges) (nth 0 edges))))
+
+(defun tags-get-window ()
+  "from sr-speedbar"
+  (let ((current-window (selected-window))
+        ;; Get split new window.
+        (new-window (split-window
+                     (selected-window)
+                     (if tagshow-right-side
+                         ;(- (tagshow-current-window-take-width) tagshow-window-width)
+                         (- (tagshow-current-window-take-width) 30)
+                       30)
+                     t)))
+    ;; Select split window.
+    (setq tags-window
+          (if tagshow-right-side
+              ;; Select right window when `sr-speedbar-right-side' is enable.
+              new-window
+            ;; Otherwise select left widnow.
+            current-window))))
 
 (provide 'tagshow)
 
