@@ -2,9 +2,8 @@
 (require 'grizzl)
 (require 'dash)
 
-(defvar wscope-marker-ring-length 30 )
-
-(defvar wscope-marker-ring (make-ring wscope-marker-ring-length))
+(defvar wscope-output-buffer-name "*Result*"
+  "The name of the cscope output buffer.")
 
 (defun wscope-init (dir)
   (interactive "DCscope Initial Directory: ")
@@ -41,12 +40,11 @@
   (interactive)
   (setq symbol (current-word))
   (if symbol
-	  (wscope-query "1")
-	(progn
-	  (setq query-command (concat "1" symbol "\n") )
-	  (ring-insert wscope-marker-ring (point-marker))
-	  (setq wscope-action-message (format "Finding global definition: %s" symbol))
-	  (wscope-query query-command)))
+	  (progn
+		(setq query-command (concat "1" symbol "\n"))
+		(setq wscope-action-message (format "Finding global definition: %s" symbol))
+		(wscope-query query-command))
+	(message "What to find?"))
   )
 
 (defun wscope-query (command)
@@ -67,20 +65,30 @@
 	(setq outbuf (get-buffer-create wscope-output-buffer-name))
 	(with-current-buffer outbuf
 	  (progn
-		(pop-to-buffer outbuf)
-		(shrink-window 5)
-		(insert wscope-separator-line "\n")
-		(insert "Search complete.")
-		(if wscope-first-match
-			(set-window-point (get-buffer-window outbuf) wscope-first-match-point)
-		  (insert "\nNothing found!"))
-		(wscope-list-entry-mode)
+		(let* ((test-tags '("hello" "world" "goodbye" "welcome"))
+			   (tagshow-index (grizzl-make-index test-tags))
+			   (select-tag (minibuffer-with-setup-hook
+							   (lambda () ())
+							 (grizzl-completing-read "Show text: TODO" tagshow-index))))
+		  (message select-tag))
+;;		(pop-to-buffer outbuf)
+;;		(shrink-window 5)
+;;		(insert wscope-separator-line "\n")
+;;		(insert "Search complete.")
+;;		(if wscope-first-match
+;;			(set-window-point (get-buffer-window outbuf) wscope-first-match-point)
+;;		  (insert "\nNothing found!"))
+;;		(wscope-list-entry-mode)
 		)
 	  ))
   )
 
-(defun ascope-process_one_chunk (text-start text-end)
-  (with-current-buffer "*ascope*"
+(defun wscope-make-entry-line (func-name line-number line)
+  nil
+  )
+
+(defun wscope-process_one_chunk (text-start text-end)
+  (with-current-buffer "*wscope*"
 	(setq stuff (buffer-substring-no-properties text-start text-end))
 	(while (and stuff
 				(string-match "\\([^\n]+\n\\)\\(\\(.\\|\n\\)*\\)" stuff))
@@ -109,8 +117,8 @@
 									(match-end 4))
 					)
 
-			  (ascope-insert-text-with-properites
-			   (ascope-make-entry-line function-name
+			  (wscope-insert-text-with-properites
+			   (wscope-make-entry-line function-name
 									   line-number
 									   line)
 			   (expand-file-name file)
@@ -119,15 +127,18 @@
 	)
   )
 
+(defun wscope-insert-text-with-properites (text filename &optional line-number)
+  nil
+  )
 
-(defun ascope-process-output ()
-  (setq ascope-first-match nil
-		ascope-last-file nil)
-  (if (get-buffer ascope-output-buffer-name)
-	  (kill-buffer ascope-output-buffer-name)
+(defun wscope-process-output ()
+  (setq wscope-first-match nil
+		wscope-last-file nil)
+  (if (get-buffer wscope-output-buffer-name)
+	  (kill-buffer wscope-output-buffer-name)
 	)
   (let (text-start text-end text-max)
-	(with-current-buffer "*ascope*"
+	(with-current-buffer "*wscope*"
 	  (setq text-start (point))
 	  (setq text-max (point-max))
 	  (if (>= (- text-max text-start) 5000)
@@ -136,7 +147,7 @@
 	  )
 	(while (and (> (- text-end text-start) 0) (<= text-end text-max))
 
-	  (ascope-process_one_chunk text-start text-end)
+	  (wscope-process_one_chunk text-start text-end)
 
 	  (setq text-start (+ text-end 1))
 	  (if (>= (- text-max text-start) 5000)
@@ -158,3 +169,7 @@
 	  )
 	)
   )
+
+(provide 'wscope)
+
+;;; wscope.el ends here
