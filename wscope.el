@@ -2,8 +2,68 @@
 (require 'grizzl)
 (require 'dash)
 
+(defgroup wscope nil
+  "Cscope interface for (X)Emacs.
+Using cscope, you can easily search for where symbols are used and defined.
+It is designed to answer questions like:
+
+Where is this variable used?
+What is the value of this preprocessor symbol?
+Where is this function in the source files?
+What functions call this function?
+What functions are called by this function?
+Where does the message \"out of space\" come from?
+Where is this source file in the directory structure?
+What files include this header file?
+"
+  :prefix "wscope-"
+  :group 'tools)
+
+(defcustom wscope-name-line-width -30
+  "*The width of the combined \"function name:line number\" field in the
+cscope results buffer. If negative, the field is left-justified."
+  :type 'integer
+  :group 'wscope)
+
+(defcustom wscope-use-face nil
+  "*Whether to use text highlighting (? la font-lock) or not."
+  :group 'wscope
+  :type '(boolean))
+
 (defvar wscope-output-buffer-name "*Result*"
   "The name of the cscope output buffer.")
+
+(defvar *wscope-result-cache* nil
+  "cache find result")
+
+(defface wscope-function-face
+  '((((class color) (background dark))
+	 (:foreground "cyan"))
+	(((class color) (background light))
+	 (:foreground "magenta"))
+	(t (:bold t)))
+  "Face used to highlight function name in the *wscope* buffer."
+  :group 'wscope)
+
+
+(defface wscope-line-number-face
+  '((((class color) (background dark))
+	 (:foreground "red"))
+	(((class color) (background light))
+	 (:foreground "red"))
+	(t (:bold t)))
+  "Face used to highlight line number in the *wscope* buffer."
+  :group 'wscope)
+
+(defface wscope-line-face
+  '((((class color) (background dark))
+	 (:foreground "green"))
+	(((class color) (background light))
+	 (:foreground "black"))
+	(t (:bold nil)))
+  "Face used to highlight the rest of line in the *wscope* buffer."
+  :group 'wscope)
+
 
 (defun wscope-init (dir)
   (interactive "DCscope Initial Directory: ")
@@ -50,6 +110,7 @@
 (defun wscope-query (command)
   (let ((proc (get-process "wscope")) outbuf
 		)
+	(setq *wscope-result-cache* nil)
 	(with-current-buffer (process-buffer proc)
 
 	  (goto-char (point-max))
@@ -57,35 +118,44 @@
 
 	  (process-send-string "wscope" command)
 
-	  (wscope-wait-for-output )
+	  (wscope-wait-for-output)
 
 	  (wscope-process-output)
 	  )
 
-	(setq outbuf (get-buffer-create wscope-output-buffer-name))
-	(with-current-buffer outbuf
-	  (progn
-		(let* ((test-tags '("hello" "world" "goodbye" "welcome"))
-			   (tagshow-index (grizzl-make-index test-tags))
-			   (select-tag (minibuffer-with-setup-hook
-							   (lambda () ())
-							 (grizzl-completing-read "Show text: TODO" tagshow-index))))
-		  (message select-tag))
-;;		(pop-to-buffer outbuf)
-;;		(shrink-window 5)
-;;		(insert wscope-separator-line "\n")
-;;		(insert "Search complete.")
+	(let* ((show-tags (-map 'car *wscope-result-cache*))
+		   (tagshow-index (grizzl-make-index show-tags))
+		   (select-tag (minibuffer-with-setup-hook
+						   (lambda () ())
+						 (grizzl-completing-read "Show text: TODO" tagshow-index))))
+	  (message select-tag))
 ;;		(if wscope-first-match
 ;;			(set-window-point (get-buffer-window outbuf) wscope-first-match-point)
 ;;		  (insert "\nNothing found!"))
 ;;		(wscope-list-entry-mode)
-		)
-	  ))
+	  )
   )
 
 (defun wscope-make-entry-line (func-name line-number line)
-  nil
-  )
+  ;; The format of entry line:
+  ;; func-name[line-number]______line
+  ;; <- cscope-name-line-width ->
+  ;; `format' of Emacs doesn't have "*s" spec.
+  (let* ((fmt (format "%%%ds %%s" wscope-name-line-width))
+		 (str (format fmt (format "%s[%s]" func-name line-number) line))
+		 beg end)
+	(if wscope-use-face
+		(progn
+		  (setq end (length func-name))
+		  (put-text-property 0 end 'face 'wscope-function-face str)
+		  (setq beg (1+ end)
+				end (+ beg (length line-number)))
+		  (put-text-property beg end 'face 'wscope-line-number-face str)
+		  (setq end (length str)
+				beg (- end (length line)))
+		  (put-text-property beg end 'face 'wscope-line-face str)
+		  ))
+	str))
 
 (defun wscope-process_one_chunk (text-start text-end)
   (with-current-buffer "*wscope*"
@@ -128,8 +198,12 @@
   )
 
 (defun wscope-insert-text-with-properites (text filename &optional line-number)
-  nil
+  (let ((newentry '(text filename line-number)))
+	(prin1 *wscope-result-cache*)
+	(setq *wscope-result-cache* (cons newentry *wscope-result-cache*)))
   )
+
+InOrg
 
 (defun wscope-process-output ()
   (setq wscope-first-match nil
