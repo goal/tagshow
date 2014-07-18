@@ -67,12 +67,26 @@ cscope results buffer. If negative, the field is left-justified."
   "Face used to highlight the rest of line in the *wscope* buffer."
   :group 'wscope)
 
+(defun wscope-auto-init (dir depth)
+  (if (< depth 0)
+	  (progn
+		(message (concat dir ": no cscope.out file found!"))
+		nil)
+	(let* ((target-dir (expand-file-name dir))
+		   (cur-dir-file-name (concat target-dir "cscope.out")))
+	  (if (file-exists-p cur-dir-file-name)
+		  (progn
+			(wscope-init target-dir)
+			1)
+		(wscope-auto-init (concat dir "../") (- depth 1)))))
+  )
 
 (defun wscope-init (dir)
   (interactive "DCscope Initial Directory: ")
   (if (get-process "wscope") (kill-process (get-process "wscope")))
   (if (get-buffer "*wscope*") (kill-buffer (get-buffer "*wscope*")))
   (setq default-directory dir)
+  (setq *wscope-cscope-file-dir* dir)
   (start-process "wscope" "*wscope*" "cscope" "-ld" "-f" "cscope.out")
   (set-process-filter (get-process "wscope") 'wscope-filter)
   (with-current-buffer "*wscope*"
@@ -111,20 +125,25 @@ cscope results buffer. If negative, the field is left-justified."
   )
 
 (defun wscope-query (command)
+  (if (get-process "wscope")
+	  (-wscope-query command)
+	(progn
+	  (if (wscope-auto-init default-directory 3)
+		  (-wscope-query command)
+		nil)))
+  )
+
+(defun -wscope-query (command)
   (let ((proc (get-process "wscope")) outbuf
 		)
 	(setq *wscope-result-cache* nil)
 	(with-current-buffer (process-buffer proc)
-
 	  (goto-char (point-max))
 	  (insert command)
-
 	  (process-send-string "wscope" command)
 
 	  (wscope-wait-for-output)
-
-	  (wscope-process-output)
-	  )
+	  (wscope-process-output))
 
 	(let* ((show-tags (-map 'car *wscope-result-cache*))
 		   (tagshow-index (grizzl-make-index show-tags))
@@ -143,13 +162,20 @@ cscope results buffer. If negative, the field is left-justified."
 	(goto-line (read line-number)))
   )
 
+(defun strip (long-string pre-string)
+  (if (string-prefix-p pre-string long-string)
+	  (substring long-string (length pre-string) (length long-string))
+	long-string)
+  )
+
 (defun wscope-make-entry-line (file func-name line-number line)
   ;; The format of entry line:
   ;; func-name[line-number]______line
   ;; <- cscope-name-line-width ->
   ;; `format' of Emacs doesn't have "*s" spec.
-  (let* ((fmt (format "%%%ds %%s" wscope-name-line-width))
-		 (str (format fmt (format "%s[%s]" file line-number) line))
+  (let* ((short-file (strip file *wscope-cscope-file-dir*))
+		 (fmt (format "%%%ds %%s" wscope-name-line-width))
+		 (str (format fmt (format "%s[%s]" short-file line-number) line))
 		 beg end)
 	(if wscope-use-face
 		(progn
