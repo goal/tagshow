@@ -136,6 +136,67 @@ cscope results buffer. If negative, the field is left-justified."
 	(message "What to find?"))
   )
 
+(defun wscope-find-called-functions ()
+  "Display functions called by a function."
+  (interactive)
+  (setq symbol (current-word))
+  (if symbol
+	  (progn
+		(setq query-command (concat "2" symbol "\n") )
+		(setq wscope-action-message (format "Find functions called by this function: %s" symbol))
+		(wscope-query query-command))
+	(message "What to find?"))
+  )
+
+(defun wscope-find-functions-calling-this-function ()
+  "Display functions calling a function."
+  (interactive)
+  (setq symbol (current-word))
+  (if symbol
+	  (progn
+		(setq query-command (concat "3" symbol "\n") )
+		(setq wscope-action-message (format "Find functions calling this function: %s" symbol))
+		(wscope-query query-command))
+	(message "What to find?"))
+  )
+
+(defun wscope-find-this-text-string ()
+  "Locate where a text string occurs."
+  (interactive)
+  (setq symbol (current-word))
+  (if symbol
+	  (progn
+		(setq query-command (concat "4" symbol "\n") )
+		(setq wscope-action-message (format "Find this text string: %s" symbol))
+		(wscope-query query-command))
+	(message "What to find?"))
+  )
+
+;; this not work yet
+(defun wscope-find-files-including-file ()
+  "Locate all files #including a file."
+  (interactive)
+  (setq symbol (current-word))
+  (if symbol
+	  (progn
+		(setq query-command (concat "8" symbol "\n") )
+		(setq wscope-action-message (format "Find files #including this file: %s" symbol))
+		(wscope-query query-command))
+	(message "What to find?"))
+  )
+
+(defun wscope-all-symbol-assignments ()
+  "Find all the assignments of the symbol"
+  (interactive)
+  (setq symbol (current-word))
+  (if symbol
+	  (progn
+		(setq query-command (concat "10" symbol "\n") )
+		(setq wscope-action-message (format "Find all assignments of symbol %s" symbol))
+		(wscope-query query-command))
+	(message "What to find?"))
+  )
+
 (defun wscope-query (command)
   (if (get-process "wscope")
 	  (-wscope-query command)
