@@ -36,6 +36,9 @@ cscope results buffer. If negative, the field is left-justified."
 (defvar *wscope-result-cache* nil
   "cache find result")
 
+(defvar *wscope-cscope-file-dir* nil
+  "the dir where cscope.out is at")
+
 (defface wscope-function-face
   '((((class color) (background dark))
 	 (:foreground "cyan"))
@@ -128,21 +131,25 @@ cscope results buffer. If negative, the field is left-justified."
 		   (select-tag (minibuffer-with-setup-hook
 						   (lambda () ())
 						 (grizzl-completing-read "Show text: TODO" tagshow-index))))
-	  (message select-tag))
-;;		(if wscope-first-match
-;;			(set-window-point (get-buffer-window outbuf) wscope-first-match-point)
-;;		  (insert "\nNothing found!"))
-;;		(wscope-list-entry-mode)
-	  )
+	  (goto-file-and-line select-tag)))
   )
 
-(defun wscope-make-entry-line (func-name line-number line)
+(defun goto-file-and-line (select-tag)
+  (let* ((item (car (-select (lambda (x) (equal (car x) select-tag)) *wscope-result-cache*)))
+		 (file-name (nth 1 item))
+		 (line-number (nth 2 item))
+		 )
+	(find-file file-name)
+	(goto-line (read line-number)))
+  )
+
+(defun wscope-make-entry-line (file func-name line-number line)
   ;; The format of entry line:
   ;; func-name[line-number]______line
   ;; <- cscope-name-line-width ->
   ;; `format' of Emacs doesn't have "*s" spec.
   (let* ((fmt (format "%%%ds %%s" wscope-name-line-width))
-		 (str (format fmt (format "%s[%s]" func-name line-number) line))
+		 (str (format fmt (format "%s[%s]" file line-number) line))
 		 beg end)
 	(if wscope-use-face
 		(progn
@@ -188,7 +195,8 @@ cscope results buffer. If negative, the field is left-justified."
 					)
 
 			  (wscope-insert-text-with-properites
-			   (wscope-make-entry-line function-name
+			   (wscope-make-entry-line file
+									   function-name
 									   line-number
 									   line)
 			   (expand-file-name file)
@@ -198,8 +206,7 @@ cscope results buffer. If negative, the field is left-justified."
   )
 
 (defun wscope-insert-text-with-properites (text filename &optional line-number)
-  (let ((newentry '(text filename line-number)))
-	(prin1 *wscope-result-cache*)
+  (let ((newentry (list text filename line-number)))
 	(setq *wscope-result-cache* (cons newentry *wscope-result-cache*)))
   )
 
