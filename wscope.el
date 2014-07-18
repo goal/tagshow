@@ -112,6 +112,18 @@ cscope results buffer. If negative, the field is left-justified."
 	  ))
   )
 
+(defun wscope-find-this-symbol ()
+  "Locate a symbol in source code."
+  (interactive)
+  (setq symbol (current-word))
+  (if symbol
+	  (progn
+		(setq query-command (concat "0" symbol "\n"))
+		(setq wscope-action-message (format "Find this symbol: %s" symbol))
+		(wscope-query query-command))
+	(message "What to find?"))
+  )
+
 (defun wscope-find-global-definition ()
   "Find current symbol's global definition."
   (interactive)
