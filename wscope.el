@@ -203,8 +203,6 @@ cscope results buffer. If negative, the field is left-justified."
 	(setq *wscope-result-cache* (cons newentry *wscope-result-cache*)))
   )
 
-InOrg
-
 (defun wscope-process-output ()
   (setq wscope-first-match nil
 		wscope-last-file nil)
