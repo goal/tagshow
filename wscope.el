@@ -206,6 +206,11 @@ cscope results buffer. If negative, the field is left-justified."
 		nil)))
   )
 
+(defun wscope-report-progress (n total)
+  "Show the number of files processed in the message area."
+  (when (= 0 (mod n 1000))
+	(message (format "Indexing (%d/%d)" n total))))
+
 (defun -wscope-query (command)
   (let ((proc (get-process "wscope")) outbuf
 		)
@@ -219,7 +224,7 @@ cscope results buffer. If negative, the field is left-justified."
 	  (wscope-process-output))
 
 	(let* ((show-tags (-map 'car *wscope-result-cache*))
-		   (tagshow-index (grizzl-make-index show-tags))
+		   (tagshow-index (grizzl-make-index show-tags :progress-fn #'wscope-report-progress))
 		   (select-tag (minibuffer-with-setup-hook
 						   (lambda () ())
 						 (grizzl-completing-read "Show text: TODO" tagshow-index))))

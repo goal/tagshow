@@ -111,10 +111,15 @@ Default is t."
   "for debug use"
   (-reduce-from (lambda (x y) (format "%s %s %d" x (car y) (car (last y)))) "" *tags-cache*))
 
+(defun tagshow-report-progress (n total)
+  "Show the number of files processed in the message area."
+  (when (= 0 (mod n 1000))
+	(message (format "Indexing (%d/%d)" n total))))
+
 (defun show-tags ()
   ""
   (interactive)
-  (let* ((tagshow-index (grizzl-make-index (get-file-tags (buffer-file-name))))
+  (let* ((tagshow-index (grizzl-make-index (get-file-tags (buffer-file-name)) :progress-fn #'tagshow-report-progress))
 		(select-tag (minibuffer-with-setup-hook
 					 (lambda ()
 					   (tagshow-mode 1))
