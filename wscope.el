@@ -1,4 +1,17 @@
 
+;; some source from cscope:
+;; 0    {"Find this", "C symbol",           findsymbol},
+;; 1    {"Find this", "global definition",      finddef},
+;; 2    {"Find", "functions called by this function",   findcalledby},
+;; 3    {"Find", "functions calling this function", findcalling},
+;; 4    {"Find this", "text string",            findstring},
+;; 5    {"Change this", "text string",          findstring},
+;; 6    {"Find this", "egrep pattern",          findregexp},
+;; 7    {"Find this", "file",               findfile},
+;; 8    {"Find", "files #including this file",      findinclude},
+;; 9    {"Find", "assignments to this symbol",      findassign},
+;; 10    {"Find all", "function definitions",        findallfcns},   /* samuel only */
+
 (require 'grizzl)
 (require 'dash)
 
@@ -172,11 +185,34 @@ cscope results buffer. If negative, the field is left-justified."
 	(message "What to find?"))
   )
 
-;; this not work yet
-(defun wscope-find-files-including-file ()
+(defun wscope-interactive (prompt)
+  (list
+   (let (sym)
+	 (setq sym (current-word))
+	 (read-string
+	  (if sym
+		  (format "%s (default %s): "
+				  (substring prompt 0 (string-match "[ :]+\\'" prompt))
+				  sym)
+		prompt)
+	  nil nil sym)
+	 ))
+  )
+
+(defun wscope-find-this-file (symbol)
+  "Locate all files by name match"
+  (interactive (wscope-interactive "Find files with string in name: "))
+  (if symbol
+	  (progn
+		(setq query-command (concat "7" symbol "\n") )
+		(setq wscope-action-message (format "Find files with string in name: %s" symbol))
+		(wscope-query query-command))
+	(message "What to find?"))
+  )
+
+(defun wscope-find-files-including-file (symbol)
   "Locate all files #including a file."
-  (interactive)
-  (setq symbol (current-word))
+  (interactive (wscope-interactive "Find files #including this file: "))
   (if symbol
 	  (progn
 		(setq query-command (concat "8" symbol "\n") )
@@ -186,7 +222,7 @@ cscope results buffer. If negative, the field is left-justified."
   )
 
 (defun wscope-all-symbol-assignments ()
-  "Find all the assignments of the symbol"
+  "Find all the assignments of the symbol. Don't work yet due to cscope bug!!"
   (interactive)
   (setq symbol (current-word))
   (if symbol
