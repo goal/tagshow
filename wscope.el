@@ -43,6 +43,11 @@ cscope results buffer. If negative, the field is left-justified."
   :group 'wscope
   :type '(boolean))
 
+(defcustom wscope-check-cscope t
+  "*Check whether cscope.out is up-to-date when go-to-file-and-line"
+  :group 'wscope
+  :type '(boolean))
+
 (defvar wscope-output-buffer-name "*Result*"
   "The name of the cscope output buffer.")
 
@@ -273,7 +278,10 @@ cscope results buffer. If negative, the field is left-justified."
 		 (line-number (nth 2 item))
 		 )
 	(find-file file-name)
-	(goto-line (read line-number)))
+	(goto-line (read line-number))
+	(if (string-match (nth 1 (split-string select-tag " *")) (thing-at-point 'line))
+		nil
+	  (message "Seems cscope.out is out of date, maybe you should do an update")))
   )
 
 (defun strip (long-string pre-string)
