@@ -1,8 +1,8 @@
-;; Copyright © 2013 WANG Yanjin
+;; Copyright © 2014 WANG Yanjin
 ;;
 ;; Author:   WANG Yanjin <wyj1046#gmail.com>
 ;; URL:      http://github.com/goal/tagshow
-;; Version:  0.1.1
+;; Version:  0.1.2
 ;; Keywords: tags
 
 ;; This file is NOT part of GNU Emacs.
