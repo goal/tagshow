@@ -1,3 +1,15 @@
+;; Copyright © 2014 WANG Yanjin
+;;
+;; Author:   WANG Yanjin <wyj1046#gmail.com>
+;; URL:      http://github.com/goal/tagshow
+;; Version:  0.1.2
+;; Keywords: tags
+
+;; This file is NOT part of GNU Emacs.
+
+;;; --- License
+
+;; Licensed under the same terms as Emacs.
 
 ;; some source from cscope:
 ;; 0    {"Find this", "C symbol",           findsymbol},
@@ -279,9 +291,11 @@ cscope results buffer. If negative, the field is left-justified."
 		 )
 	(find-file file-name)
 	(goto-line (read line-number))
-	(if (string-match (nth 1 (split-string select-tag " *")) (thing-at-point 'line))
-		nil
-	  (message "Seems cscope.out is out of date, maybe you should do an update")))
+	(if wscope-check-cscope
+		(if (string-match (nth 1 (split-string select-tag " *")) (thing-at-point 'line))
+			nil
+		  (message "Seems cscope.out is out of date, maybe you should do an update"))
+	  nil))
   )
 
 (defun strip (long-string pre-string)
